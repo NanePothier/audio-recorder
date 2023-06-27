@@ -1,19 +1,16 @@
-const STATE = {
-  INACTIVE: 'inactive',
-  RECORDING: 'recording',
-  PAUSED: 'paused',
-};
+import { REC_STATE } from './AudioRecorderConstants';
 
 class AudioRecorder {
   bufferSourceNode;
 
-  constructor() {
+  constructor(sendStatus = () => {}) {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices
         .getUserMedia({ audio: true, video: false })
         .then((mediaStream) => {
           this.mediaChunks = [];
           this.audioStream = mediaStream;
+          this.recorderState = REC_STATE.INACTIVE;
 
           this.audioCtx = new AudioContext(); // audio-processing graph
           this.streamSourceNode =
@@ -25,6 +22,10 @@ class AudioRecorder {
           this.mediaRecorder.ondataavailable = this.onDataAvailable.bind(this);
           this.mediaRecorder.onstop = this.onStop.bind(this);
           this.mediaRecorder.onerror = this.onError.bind(this);
+
+          this.audioInterval = setInterval(() => {
+            sendStatus(this.recorderState);
+          }, 200);
         })
         .catch((error) => {
           console.log('The following getUserMedia error occurred: ' + error);
@@ -35,25 +36,32 @@ class AudioRecorder {
   }
 
   record() {
-    if (this.mediaRecorder && this.mediaRecorder.state !== STATE.RECORDING) {
+    if (
+      this.mediaRecorder &&
+      this.mediaRecorder.state !== REC_STATE.RECORDING
+    ) {
+      this.recorderState = REC_STATE.RECORDING;
       this.mediaRecorder.start();
     }
   }
 
   stopRecord() {
-    if (this.mediaRecorder && this.mediaRecorder.state !== STATE.INACTIVE) {
+    if (this.mediaRecorder && this.mediaRecorder.state !== REC_STATE.INACTIVE) {
+      this.recorderState = REC_STATE.RECORDED;
       this.mediaRecorder.stop();
     }
   }
 
   play() {
     if (this.bufferSourceNode && this.bufferSourceNode.buffer) {
+      this.recorderState = REC_STATE.PLAYING;
       this.bufferSourceNode.start();
     }
   }
 
   stopPlay() {
     if (this.bufferSourceNode && this.bufferSourceNode.buffer) {
+      this.recorderState = REC_STATE.STOPPED;
       this.bufferSourceNode.stop();
     }
   }

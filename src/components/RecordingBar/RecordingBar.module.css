@@ -20,3 +20,11 @@
   font-weight: bold;
   cursor: pointer;
 }
+
+.recording {
+  background-color: rgba(23, 99, 93, 1);
+}
+
+.play {
+  background-color: rgba(171, 244, 217, 0.6);
+}

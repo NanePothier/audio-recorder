@@ -2,6 +2,7 @@ import { REC_STATE } from './AudioRecorderConstants';
 
 class AudioRecorder {
   bufferSourceNode;
+  audioDuration;
 
   constructor(sendStatus = () => {}) {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -70,6 +71,10 @@ class AudioRecorder {
     this.mediaChunks.push(chunk.data);
   }
 
+  onPlaybackEnded(e) {
+    this.recorderState = REC_STATE.INACTIVE;
+  }
+
   async onStop() {
     try {
       const blob = new Blob(this.mediaChunks, {
@@ -84,6 +89,8 @@ class AudioRecorder {
       // so create new one every time we stop recording
       this.bufferSourceNode = this.audioCtx.createBufferSource();
       this.bufferSourceNode.buffer = decodedData;
+      this.audioDuration = decodedData.duration;
+      this.bufferSourceNode.onended = this.onPlaybackEnded.bind(this);
       this.bufferSourceNode.connect(this.audioCtx.destination); // connect to output
     } catch (e) {
       console.log('Something went wrong trying to create audio.');

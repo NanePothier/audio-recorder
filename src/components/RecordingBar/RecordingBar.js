@@ -40,6 +40,11 @@ const RecordingBar = (props) => {
     } else {
       setIsInPlayState(false);
     }
+
+    if (recorderState === REC_STATE.INACTIVE) {
+      setBtnState(BTN_STATE.RECORD);
+      setBtnIcon(ICON.MIC);
+    }
   };
 
   const handleBtnClick = () => {

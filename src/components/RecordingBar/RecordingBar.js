@@ -42,12 +42,14 @@ const RecordingBar = (props) => {
   };
 
   return (
-    <button
-      className={`${classes.recordBtn} material-symbols-outlined`}
-      onClick={handleBtnClick}
-    >
-      {btnIcon}
-    </button>
+    <div className={classes.container}>
+      <button
+        className={`${classes.recordBtn} material-symbols-outlined`}
+        onClick={handleBtnClick}
+      >
+        {btnIcon}
+      </button>
+    </div>
   );
 };
 

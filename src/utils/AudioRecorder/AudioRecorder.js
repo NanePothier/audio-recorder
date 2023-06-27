@@ -5,7 +5,7 @@ const STATE = {
 };
 
 class AudioRecorder {
-  audio;
+  bufferSourceNode;
 
   constructor() {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -14,6 +14,13 @@ class AudioRecorder {
         .then((mediaStream) => {
           this.mediaChunks = [];
           this.audioStream = mediaStream;
+
+          this.audioCtx = new AudioContext(); // audio-processing graph
+          this.streamSourceNode =
+            this.audioCtx.createMediaStreamSource(mediaStream);
+          this.analyserNode = this.audioCtx.createAnalyser();
+          this.streamSourceNode.connect(this.analyserNode);
+
           this.mediaRecorder = new MediaRecorder(mediaStream);
           this.mediaRecorder.ondataavailable = this.onDataAvailable.bind(this);
           this.mediaRecorder.onstop = this.onStop.bind(this);
@@ -29,7 +36,6 @@ class AudioRecorder {
 
   record() {
     if (this.mediaRecorder && this.mediaRecorder.state !== STATE.RECORDING) {
-      this.audio = null;
       this.mediaRecorder.start();
     }
   }
@@ -41,14 +47,14 @@ class AudioRecorder {
   }
 
   play() {
-    if (this.audio) {
-      this.audio.play();
+    if (this.bufferSourceNode && this.bufferSourceNode.buffer) {
+      this.bufferSourceNode.start();
     }
   }
 
   stopPlay() {
-    if (this.audio) {
-      this.audio.pause();
+    if (this.bufferSourceNode && this.bufferSourceNode.buffer) {
+      this.bufferSourceNode.stop();
     }
   }
 
@@ -56,14 +62,21 @@ class AudioRecorder {
     this.mediaChunks.push(chunk.data);
   }
 
-  onStop() {
+  async onStop() {
     try {
       const blob = new Blob(this.mediaChunks, {
         type: 'audio/ogg; codecs=opus',
       });
       this.mediaChunks = [];
-      const audioUrl = window.URL.createObjectURL(blob);
-      this.audio = new Audio(audioUrl);
+
+      const arrayBuffer = await blob.arrayBuffer();
+      const decodedData = await this.audioCtx.decodeAudioData(arrayBuffer);
+
+      // we can only call start() on the AudioBufferSourceNode once during its lifetime
+      // so create new one every time we stop recording
+      this.bufferSourceNode = this.audioCtx.createBufferSource();
+      this.bufferSourceNode.buffer = decodedData;
+      this.bufferSourceNode.connect(this.audioCtx.destination); // connect to output
     } catch (e) {
       console.log('Something went wrong trying to create audio.');
     }

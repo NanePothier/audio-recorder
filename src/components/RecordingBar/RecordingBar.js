@@ -18,10 +18,15 @@ const RecordingBar = (props) => {
   const [btnIcon, setBtnIcon] = useState(ICON.MIC);
   const [isRecording, setIsRecording] = useState(false);
   const [isInPlayState, setIsInPlayState] = useState(false);
+  const [retryIsDisabled, setRetryIsDisabled] = useState(true);
 
   useEffect(() => {
     if (!audioRecorder.current) {
-      audioRecorder.current = new AudioRecorder(processState);
+      audioRecorder.current = new AudioRecorder(
+        processState,
+        processVolumeLevel,
+        processPlaybackEnded
+      );
     }
   }, []);
 
@@ -32,22 +37,22 @@ const RecordingBar = (props) => {
       setIsRecording(false);
     }
 
-    if (
-      recorderState === REC_STATE.RECORDED ||
-      recorderState === REC_STATE.PLAYING
-    ) {
+    if (recorderState === REC_STATE.RECORDED) {
       setIsInPlayState(true);
-    } else {
-      setIsInPlayState(false);
-    }
-
-    if (recorderState === REC_STATE.INACTIVE) {
-      setBtnState(BTN_STATE.RECORD);
-      setBtnIcon(ICON.MIC);
     }
   };
 
-  const handleBtnClick = () => {
+  const processVolumeLevel = (volLevel) => {
+    // do something with the volume level
+  };
+
+  const processPlaybackEnded = () => {
+    setBtnState(BTN_STATE.PLAY);
+    setBtnIcon(ICON.PLAY);
+    setRetryIsDisabled(false);
+  };
+
+  const handleRecordBtnClick = () => {
     if (btnState === BTN_STATE.RECORD) {
       audioRecorder.current.record();
       setBtnState(BTN_STATE.STOP_RECORD);
@@ -55,15 +60,22 @@ const RecordingBar = (props) => {
       audioRecorder.current.stopRecord();
       setBtnState(BTN_STATE.PLAY);
       setBtnIcon(ICON.PLAY);
+      setRetryIsDisabled(false);
     } else if (btnState === BTN_STATE.PLAY) {
       audioRecorder.current.play();
       setBtnState(BTN_STATE.STOP_PLAY);
       setBtnIcon(ICON.PAUSE);
+      setRetryIsDisabled(true);
     } else if (btnState === BTN_STATE.STOP_PLAY) {
       audioRecorder.current.stopPlay();
-      setBtnState(BTN_STATE.RECORD);
-      setBtnIcon(ICON.MIC);
     }
+  };
+
+  const handleTryAgain = () => {
+    setBtnState(BTN_STATE.RECORD);
+    setBtnIcon(ICON.MIC);
+    setRetryIsDisabled(true);
+    setIsInPlayState(false);
   };
 
   return (
@@ -72,10 +84,22 @@ const RecordingBar = (props) => {
         className={`${classes.recordBtn} material-symbols-outlined ${
           isRecording && classes.recording
         } ${isInPlayState && classes.play}`}
-        onClick={handleBtnClick}
+        onClick={handleRecordBtnClick}
       >
         {btnIcon}
       </button>
+      <div className={classes.tryAgainBox}>
+        <div className={classes.tryAgainTxt}>Try Again</div>
+        <button
+          className={`${classes.tryAgainIcon} ${
+            retryIsDisabled && classes.retryDisabled
+          } material-symbols-outlined`}
+          onClick={handleTryAgain}
+          disabled={retryIsDisabled}
+        >
+          {ICON.REPLAY}
+        </button>
+      </div>
     </div>
   );
 };

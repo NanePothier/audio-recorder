@@ -3,4 +3,5 @@ export const ICON = {
   PLAY: 'play_arrow',
   PAUSE: 'pause',
   STOP: 'square',
+  REPLAY: 'replay',
 };

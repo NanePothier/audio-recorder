@@ -4,6 +4,8 @@ class AudioRecorder {
   bufferSourceNode;
   analyserInterval;
   bufferSourceNodeUsed = false;
+  playTimeSlices = [];
+  playStartTime;
 
   audioDuration;
   sendVolumeLevel;
@@ -90,7 +92,9 @@ class AudioRecorder {
         }
 
         this.recorderState = REC_STATE.PLAYING;
-        this.bufferSourceNode.start();
+        this.playStartTime = Date.now();
+        const startPlayAt = this.getTotalPlayTime();
+        this.bufferSourceNode.start(0, startPlayAt);
       }
     } catch (e) {
       console.log('Error trying to play recording: ' + e);
@@ -126,9 +130,20 @@ class AudioRecorder {
     }
   }
 
+  getTotalPlayTime() {
+    let totalTime = 0;
+
+    this.playTimeSlices.forEach((slice) => {
+      totalTime += slice;
+    });
+    return totalTime / 1000;
+  }
+
+  // assumes that the current audio is no longer needed
   reset() {
     this.audioDuration = null;
     this.recorderState = REC_STATE.INACTIVE;
+    this.playTimeSlices = [];
   }
 
   onDataAvailable(chunk) {
@@ -139,11 +154,21 @@ class AudioRecorder {
     this.bufferSourceNodeUsed = true;
     this.recorderState = REC_STATE.INACTIVE;
 
-    if (typeof this.onPlaybackEnded === 'function') {
+    // keep track of how much of the current audio has already played
+    // used to resume playback
+    const playStopTime = Date.now();
+    const timePlayed = playStopTime - this.playStartTime;
+    this.playTimeSlices.push(timePlayed);
+    const totalPlayTime = this.getTotalPlayTime();
+    const timeDifference = this.audioDuration - totalPlayTime;
+
+    if (typeof this.onPlaybackEnded === 'function' && timeDifference < 0.1) {
+      this.playTimeSlices = [];
       this.onPlaybackEnded();
     }
   }
 
+  // recording was stopped
   async onStop() {
     try {
       const blob = new Blob(this.mediaChunks, {

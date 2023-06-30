@@ -70,6 +70,7 @@ const RecordingBox = (props) => {
   };
 
   const handleTryAgain = () => {
+    audioRecorder.current.reset();
     setBtnState(BTN_STATE.RECORD);
     setBtnIcon(ICON.MIC);
     setRetryIsDisabled(true);

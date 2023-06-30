@@ -128,6 +128,7 @@ class AudioRecorder {
 
   reset() {
     this.audioDuration = null;
+    this.recorderState = REC_STATE.INACTIVE;
   }
 
   onDataAvailable(chunk) {

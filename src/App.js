@@ -1,10 +1,10 @@
 import './App.css';
-import RecordingBar from './components/RecordingBar/RecordingBar';
+import RecordingBox from './components/RecordingBox/RecordingBox';
 
 function App() {
   return (
     <div className="App">
-      <RecordingBar />
+      <RecordingBox />
     </div>
   );
 }

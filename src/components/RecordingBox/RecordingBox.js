@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import classes from './RecordingBar.module.css';
+import classes from './RecordingBox.module.css';
 import AudioRecorder from '../../utils/AudioRecorder/AudioRecorder';
 import { ICON } from '../../utils/icons';
 import { REC_STATE } from '../../utils/AudioRecorder/AudioRecorderConstants';
@@ -11,7 +11,7 @@ const BTN_STATE = {
   STOP_PLAY: 'stopPlay',
 };
 
-const RecordingBar = (props) => {
+const RecordingBox = (props) => {
   const audioRecorder = useRef(null);
 
   const [btnState, setBtnState] = useState(BTN_STATE.RECORD);
@@ -22,11 +22,9 @@ const RecordingBar = (props) => {
 
   useEffect(() => {
     if (!audioRecorder.current) {
-      audioRecorder.current = new AudioRecorder(
-        processState,
-        processVolumeLevel,
-        processPlaybackEnded
-      );
+      audioRecorder.current = new AudioRecorder(processState);
+      audioRecorder.current.sendVolumeLevel = processVolumeLevel;
+      audioRecorder.current.onPlaybackEnded = processPlaybackEnded;
     }
   }, []);
 
@@ -104,4 +102,4 @@ const RecordingBar = (props) => {
   );
 };
 
-export default RecordingBar;
+export default RecordingBox;

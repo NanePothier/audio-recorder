@@ -2,22 +2,19 @@ import { REC_STATE } from './AudioRecorderConstants';
 
 class AudioRecorder {
   bufferSourceNode;
-  audioDuration;
   analyserInterval;
   bufferSourceNodeUsed = false;
 
-  constructor(
-    sendStatus = () => {},
-    sendVolumeLevel = () => {},
-    onPlaybackEnded = () => {}
-  ) {
+  audioDuration;
+  sendVolumeLevel;
+  onPlaybackEnded;
+
+  constructor(sendRecorderState = () => {}) {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices
         .getUserMedia({ audio: true, video: false })
         .then((mediaStream) => {
           this.mediaChunks = [];
-          this.sendVolumeLevel = sendVolumeLevel;
-          this.sendPlaybackEnded = onPlaybackEnded;
           this.audioStream = mediaStream;
           this.recorderState = REC_STATE.INACTIVE;
 
@@ -33,7 +30,7 @@ class AudioRecorder {
           this.mediaRecorder.onerror = this.onError.bind(this);
 
           this.audioInterval = setInterval(() => {
-            sendStatus(this.recorderState);
+            sendRecorderState(this.recorderState);
           }, 200);
         })
         .catch((error) => {
@@ -53,17 +50,19 @@ class AudioRecorder {
         this.recorderState = REC_STATE.RECORDING;
         this.mediaRecorder.start();
 
-        this.analyserInterval = setInterval(() => {
-          const freqData = new Float32Array(this.analyserNode.fftSize);
-          this.analyserNode.getFloatTimeDomainData(freqData);
+        if (typeof this.sendVolumeLevel === 'function') {
+          this.analyserInterval = setInterval(() => {
+            const freqData = new Float32Array(this.analyserNode.fftSize);
+            this.analyserNode.getFloatTimeDomainData(freqData);
 
-          let total = 0;
-          freqData.forEach((sample) => {
-            total += Math.abs(sample);
-          });
-          const value = total / freqData.length;
-          this.sendVolumeLevel(value);
-        }, 50);
+            let total = 0;
+            freqData.forEach((sample) => {
+              total += Math.abs(sample);
+            });
+            const value = total / freqData.length;
+            this.sendVolumeLevel(value);
+          }, 50);
+        }
       }
     } catch (e) {
       console.log('Error trying to start recording: ' + e);
@@ -120,7 +119,7 @@ class AudioRecorder {
 
       this.bufferSourceNode = this.audioCtx.createBufferSource();
       this.bufferSourceNode.buffer = copyBuffer ? tempBuffer : audioBuffer;
-      this.bufferSourceNode.onended = this.onPlaybackEnded.bind(this);
+      this.bufferSourceNode.onended = this.onPlayEnded.bind(this);
       this.bufferSourceNode.connect(this.audioCtx.destination); // connect to output
     } catch (e) {
       console.log('Error trying to create new bufferSourceNode: ' + e);
@@ -135,10 +134,13 @@ class AudioRecorder {
     this.mediaChunks.push(chunk.data);
   }
 
-  onPlaybackEnded(e) {
+  onPlayEnded(e) {
     this.bufferSourceNodeUsed = true;
     this.recorderState = REC_STATE.INACTIVE;
-    this.sendPlaybackEnded();
+
+    if (typeof this.onPlaybackEnded === 'function') {
+      this.onPlaybackEnded();
+    }
   }
 
   async onStop() {

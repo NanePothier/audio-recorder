@@ -56,17 +56,20 @@ const RecordingBox = (props) => {
       setBtnState(BTN_STATE.STOP_RECORD);
     } else if (btnState === BTN_STATE.STOP_RECORD) {
       audioRecorder.current.stopRecord();
-      setBtnState(BTN_STATE.PLAY);
-      setBtnIcon(ICON.PLAY);
-      setRetryIsDisabled(false);
+      updateRecordBtn(BTN_STATE.PLAY, ICON.PLAY, false);
     } else if (btnState === BTN_STATE.PLAY) {
       audioRecorder.current.play();
-      setBtnState(BTN_STATE.STOP_PLAY);
-      setBtnIcon(ICON.PAUSE);
-      setRetryIsDisabled(true);
+      updateRecordBtn(BTN_STATE.STOP_PLAY, ICON.PAUSE, true);
     } else if (btnState === BTN_STATE.STOP_PLAY) {
       audioRecorder.current.stopPlay();
+      updateRecordBtn(BTN_STATE.PLAY, ICON.PLAY, false);
     }
+  };
+
+  const updateRecordBtn = (state, icon, retryDisabled) => {
+    setBtnState(state);
+    setBtnIcon(icon);
+    setRetryIsDisabled(retryDisabled);
   };
 
   const handleTryAgain = () => {
